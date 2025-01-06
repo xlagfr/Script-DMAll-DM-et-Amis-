@@ -4,6 +4,9 @@ const config = require("./config");
 
 // dmall by Light2discord ( discord.gg/xlagfr )
 
+// Tableau pour suivre les utilisateurs deja dm
+const alreadySent = new Set();
+
 client.on("ready", async () => {
     console.log(`${client.user.username} connecté.`);
     console.log("Récupération de vos amis et des conversations MP ouvertes...");
@@ -18,11 +21,19 @@ client.on("ready", async () => {
     let successfulSends = 0;
     let errorsSend = 0;
 
-    // Envoi aux amis
+    // Env aux friend
     for (const friend of client.relationships.friendCache.values()) {
         try {
             if (!friend || !friend.username) throw new Error("Utilisateur introuvable");
+
+            // Vérif si déjà envoyé
+            if (alreadySent.has(friend.id)) {
+                console.log(`Message déjà envoyé à ${friend.username}, passage au suivant.`);
+                continue;
+            }
+
             await sendMessageWithDelay(friend, config.message);
+            alreadySent.add(friend.id); // Ajout dans le Set après envoi réussi
             successfulSends++;
             total++;
             console.log(`Message envoyé à ${friend.username}`);
@@ -37,7 +48,15 @@ client.on("ready", async () => {
     for (const [id, channel] of dmChannels) {
         try {
             if (!channel || channel.type !== "DM") throw new Error("Canal DM introuvable ou invalide");
+
+            // Vérification si déjà envoyé
+            if (alreadySent.has(id)) {
+                console.log(`Message déjà envoyé à la conversation ID ${id}, passage au suivant.`);
+                continue;
+            }
+
             await sendMessageWithDelay(channel, config.message);
+            alreadySent.add(id); // Ajout dans le Set après envoi réussi
             successfulSends++;
             total++;
             console.log(`Message envoyé à une conversation avec l'ID : ${id}`);
